@@ -4,17 +4,53 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Book;
+use App\Http\Resources\BookCollection;
+use App\Http\Resources\BookResource;
+use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 
 class BookController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
+     * @param  \Illuminate\Http\Request  $request // contain filter params
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Book::all();
+        $isbn = $request->input('isbn');
+        $title = $request->input('title');
+        $year = $request->input('year');
+        $author = $request->input('author');
+        $publisher = $request->input('publisher');
+        // info($author);
+        // info($publisher);
+
+        $books = Book::with(['authors', 'publisher'])
+            ->when($isbn, function($query) use($isbn) {
+                $query->where('isbn', $isbn);
+            })
+            ->when($title, function($query) use($title) {
+                $query->where('title', 'like', "%$title%");
+            })
+            ->when($year, function($query) use($year) {
+                $query->where('year', $year);
+            })
+            ->when($author, function($query) use($author) {
+                $query->whereHas('authors', function($query) use($author) {
+                    $query->where('name', $author);
+                });
+            })
+            ->when($publisher, function($query) use($publisher) {
+                $query->whereHas('publisher', function($query) use($publisher) {
+                    $query->where('name', $publisher);
+                });
+            })
+            ->paginate(2);
+
+        return new BookCollection($books);
     }
 
     /**
@@ -25,7 +61,14 @@ class BookController extends Controller
      */
     public function show($id)
     {
-        return Book::findOrFail($id);
+        try {
+            return new BookResource(Book::findOrFail($id));
+        } catch(ModelNotFoundException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 404);
+        }
+        
     }
 
     /**
@@ -36,11 +79,21 @@ class BookController extends Controller
      */
     public function store(Request $request)
     {
-        $book = Book::create($request->all());
+        try {
+            $book = Book::create($request->all());
 
-        $book->authors()->sync($request->get('authors'));
+            $book->authors()->sync($request->get('authors'));
 
-        return $book;
+            return new BookResource($book);
+        } catch(QueryException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        } catch(Exception $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -52,12 +105,26 @@ class BookController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $book = Book::findOrFail($id);
-        $book->update($request->all());
+        try {
+            $book = Book::findOrFail($id);
+            $book->update($request->all());
 
-        $book->authors()->sync($request->get('authors'));
+            $book->authors()->sync($request->get('authors'));
 
-        return $book;
+            return new BookResource($book);
+        } catch(ModelNotFoundException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage(),
+            ], 404);
+        } catch(QueryException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        } catch(Exception $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     /**

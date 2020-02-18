@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\PublisherCollection;
 use Illuminate\Http\Request;
 use App\Publisher;
+use App\Http\Resources\PublisherResource;
 
 class PublisherController extends Controller
 {
@@ -14,7 +16,7 @@ class PublisherController extends Controller
      */
     public function index()
     {
-        return Publisher::all();
+        return new PublisherCollection(Publisher::with('books')->paginate(2));
     }
 
     /**
@@ -25,7 +27,7 @@ class PublisherController extends Controller
      */
     public function show($id)
     {
-        return Publisher::findOrFail($id);
+        return new PublisherResource(Publisher::findOrFail($id));
     }
 
     /**
@@ -36,7 +38,7 @@ class PublisherController extends Controller
      */
     public function store(Request $request)
     {
-        return Publisher::create($request->all());
+        return new PublisherResource(Publisher::create($request->all()));
     }
 
     /**
@@ -51,7 +53,7 @@ class PublisherController extends Controller
         $publisher = Publisher::findOrFail($id);
         $publisher->update($request->all());
 
-        return $publisher;
+        return new PublisherResource($publisher);
     }
 
     /**

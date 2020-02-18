@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Author;
+use App\Http\Resources\AuthorCollection;
+use App\Http\Resources\AuthorResource;
 
 class AuthorController extends Controller
 {
@@ -14,7 +16,7 @@ class AuthorController extends Controller
      */
     public function index()
     {
-        return Author::all();
+        return new AuthorCollection(Author::with('books')->paginate(2));
     }
 
     /**
@@ -25,7 +27,7 @@ class AuthorController extends Controller
      */
     public function show($id)
     {
-        return Author::findOrFail($id);
+        return new AuthorResource(Author::findOrFail($id));
     }
 
     /**
@@ -40,7 +42,7 @@ class AuthorController extends Controller
 
         $author->books()->sync($request->get('books'));
 
-        return $author;
+        return new AuthorResource($author);
     }
 
     /**
@@ -57,7 +59,7 @@ class AuthorController extends Controller
 
         $author->books()->sync($request->get('books'));
 
-        return $author;
+        return new AuthorResource($author);
     }
 
     /**
