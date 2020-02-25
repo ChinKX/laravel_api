@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Author;
 use App\Http\Resources\AuthorCollection;
 use App\Http\Resources\AuthorResource;
+use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 
 class AuthorController extends Controller
 {
@@ -27,7 +30,13 @@ class AuthorController extends Controller
      */
     public function show($id)
     {
-        return new AuthorResource(Author::findOrFail($id));
+        try {
+            return new AuthorResource(Author::with('books')->findOrFail($id));
+        } catch (ModelNotFoundException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 404);
+        }
     }
 
     /**
@@ -38,11 +47,21 @@ class AuthorController extends Controller
      */
     public function store(Request $request)
     {
-        $author = Author::create($request->all());
+        try {
+            $author = Author::create($request->all());
 
-        $author->books()->sync($request->get('books'));
+            $author->books()->sync($request->get('books'));
 
-        return new AuthorResource($author);
+            return new AuthorResource($author);
+        } catch (QueryException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        } catch (Exception $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -54,12 +73,26 @@ class AuthorController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $author = Author::findOrFail($id);
-        $author->update($request->all());
+        try {
+            $author = Author::findOrFail($id);
+            $author->update($request->all());
 
-        $author->books()->sync($request->get('books'));
+            $author->books()->sync($request->get('books'));
 
-        return new AuthorResource($author);
+            return new AuthorResource($author);
+        } catch (ModelNotFoundException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 404);
+        } catch (QueryException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        } catch (Exception $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -70,9 +103,23 @@ class AuthorController extends Controller
      */
     public function destroy($id)
     {
-        $author = Author::findOrFail($id);
-        $author->delete();
+        try {
+            $author = Author::findOrFail($id);
+            $author->delete();
 
-        return 204;
+            return 204;
+        } catch (ModelNotFoundException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 404);
+        } catch (QueryException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        } catch (Exception $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        }
     }
 }

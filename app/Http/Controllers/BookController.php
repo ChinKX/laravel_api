@@ -62,8 +62,8 @@ class BookController extends Controller
     public function show($id)
     {
         try {
-            return new BookResource(Book::findOrFail($id));
-        } catch(ModelNotFoundException $ex) {
+            return new BookResource(Book::with(['authors', 'publisher'])->findOrFail($id));
+        } catch (ModelNotFoundException $ex) {
             return response()->json([
                 'message' => $ex->getMessage()
             ], 404);
@@ -85,11 +85,11 @@ class BookController extends Controller
             $book->authors()->sync($request->get('authors'));
 
             return new BookResource($book);
-        } catch(QueryException $ex) {
+        } catch (QueryException $ex) {
             return response()->json([
                 'message' => $ex->getMessage()
             ], 500);
-        } catch(Exception $ex) {
+        } catch (Exception $ex) {
             return response()->json([
                 'message' => $ex->getMessage()
             ], 500);
@@ -112,15 +112,15 @@ class BookController extends Controller
             $book->authors()->sync($request->get('authors'));
 
             return new BookResource($book);
-        } catch(ModelNotFoundException $ex) {
+        } catch (ModelNotFoundException $ex) {
             return response()->json([
                 'message' => $ex->getMessage(),
             ], 404);
-        } catch(QueryException $ex) {
+        } catch (QueryException $ex) {
             return response()->json([
                 'message' => $ex->getMessage()
             ], 500);
-        } catch(Exception $ex) {
+        } catch (Exception $ex) {
             return response()->json([
                 'message' => $ex->getMessage()
             ], 500);
@@ -135,9 +135,23 @@ class BookController extends Controller
      */
     public function destroy($id)
     {
-        $book = Book::findOrFail($id);
-        $book->delete();
+        try {
+            $book = Book::findOrFail($id);
+            $book->delete();
 
-        return 204;
+            return 204;
+        } catch (ModelNotFoundException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 404);
+        } catch (QueryException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        } catch (Exception $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        }
     }
 }

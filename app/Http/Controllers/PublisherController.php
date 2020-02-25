@@ -6,6 +6,9 @@ use App\Http\Resources\PublisherCollection;
 use Illuminate\Http\Request;
 use App\Publisher;
 use App\Http\Resources\PublisherResource;
+use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 
 class PublisherController extends Controller
 {
@@ -27,7 +30,13 @@ class PublisherController extends Controller
      */
     public function show($id)
     {
-        return new PublisherResource(Publisher::findOrFail($id));
+        try {
+            return new PublisherResource(Publisher::with('books')->findOrFail($id));
+        } catch (ModelNotFoundException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 404);
+        }
     }
 
     /**
@@ -38,7 +47,19 @@ class PublisherController extends Controller
      */
     public function store(Request $request)
     {
-        return new PublisherResource(Publisher::create($request->all()));
+        try {
+            $publisher = Publisher::create($request->all());
+
+            return new PublisherResource($publisher);
+        } catch (QueryException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        } catch (Exception $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -50,10 +71,24 @@ class PublisherController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $publisher = Publisher::findOrFail($id);
-        $publisher->update($request->all());
+        try {
+            $publisher = Publisher::findOrFail($id);
+            $publisher->update($request->all());
 
-        return new PublisherResource($publisher);
+            return new PublisherResource($publisher);
+        } catch (ModelNotFoundException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage(),
+            ], 404);
+        } catch (QueryException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        } catch (Exception $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -64,9 +99,23 @@ class PublisherController extends Controller
      */
     public function destroy($id)
     {
-        $publisher = Publisher::findOrFail($id);
-        $publisher->delete();
+        try {
+            $publisher = Publisher::findOrFail($id);
+            $publisher->delete();
 
-        return 204;
+            return 204;
+        } catch (ModelNotFoundException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 404);
+        } catch (QueryException $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        } catch (Exception $ex) {
+            return response()->json([
+                'message' => $ex->getMessage()
+            ], 500);
+        }
     }
 }
