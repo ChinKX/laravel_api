@@ -9,6 +9,7 @@ use App\Http\Resources\PublisherResource;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
+use App\Http\Requests\SavePublisherRequest;
 
 class PublisherController extends Controller
 {
@@ -45,12 +46,14 @@ class PublisherController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(SavePublisherRequest $request)
     {
         try {
-            $publisher = Publisher::create($request->all());
+            if ($request->validated()) {
+                $publisher = Publisher::create($request->all());
 
-            return new PublisherResource($publisher);
+                return new PublisherResource($publisher);
+            }
         } catch (QueryException $ex) {
             return response()->json([
                 'message' => $ex->getMessage()
@@ -69,13 +72,15 @@ class PublisherController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(SavePublisherRequest $request, $id)
     {
         try {
-            $publisher = Publisher::findOrFail($id);
-            $publisher->update($request->all());
+            if ($request->validated()) {
+                $publisher = Publisher::findOrFail($id);
+                $publisher->update($request->all());
 
-            return new PublisherResource($publisher);
+                return new PublisherResource($publisher);
+            }
         } catch (ModelNotFoundException $ex) {
             return response()->json([
                 'message' => $ex->getMessage(),

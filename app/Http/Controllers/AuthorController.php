@@ -9,6 +9,7 @@ use App\Http\Resources\AuthorResource;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
+use App\Http\Requests\SaveAuthorRequest;
 
 class AuthorController extends Controller
 {
@@ -45,14 +46,16 @@ class AuthorController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(SaveAuthorRequest $request)
     {
         try {
-            $author = Author::create($request->all());
+            if ($request->validated()) {
+                $author = Author::create($request->all());
 
-            $author->books()->sync($request->get('books'));
+                $author->books()->sync($request->get('books'));
 
-            return new AuthorResource($author);
+                return new AuthorResource($author);
+            }
         } catch (QueryException $ex) {
             return response()->json([
                 'message' => $ex->getMessage()
@@ -71,15 +74,17 @@ class AuthorController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(SaveAuthorRequest $request, $id)
     {
         try {
-            $author = Author::findOrFail($id);
-            $author->update($request->all());
+            if ($request->validated()) {
+                $author = Author::findOrFail($id);
+                $author->update($request->all());
 
-            $author->books()->sync($request->get('books'));
+                $author->books()->sync($request->get('books'));
 
-            return new AuthorResource($author);
+                return new AuthorResource($author);
+            }
         } catch (ModelNotFoundException $ex) {
             return response()->json([
                 'message' => $ex->getMessage()
